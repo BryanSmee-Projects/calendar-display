@@ -1,7 +1,7 @@
 services:
   public-cal:
     build: .
-    ports:
-      - "9999:80"
+    # ports: # Remove comments if you want to use host ports
+    #  - "8080:80"
     env_file:
       - .env
