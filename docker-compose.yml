@@ -2,6 +2,6 @@ services:
   public-cal:
     build: .
     ports:
-      - "8080:80"
+      - "9999:80"
     env_file:
       - .env
