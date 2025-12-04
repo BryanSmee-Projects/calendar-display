@@ -12,7 +12,7 @@ const parseICSDate = (dateStr: string): { date: Date; isAllDay: boolean } => {
 
   // Clean format: Remove TZID prefix if present (simplified handling)
   const cleanStr = dateStr.split(';').pop()?.split(':').pop() || '';
-  
+
   // Pattern for YYYYMMDD
   const dateOnlyRegex = /^(\d{4})(\d{2})(\d{2})$/;
   // Pattern for YYYYMMDDTHHmmssZ or YYYYMMDDTHHmmss
@@ -39,9 +39,9 @@ const parseICSDate = (dateStr: string): { date: Date; isAllDay: boolean } => {
       const minute = parseInt(match[5], 10);
       const second = parseInt(match[6], 10);
       const isUTC = match[7] === 'Z';
-      
+
       const date = new Date(Date.UTC(year, month, day, hour, minute, second));
-      
+
       if (!isUTC) {
         // If not UTC, treat as local (simplified) or adjust offset. 
         // For a simple viewer, interpreting as local time usually matches user expectation for floating events.
@@ -63,11 +63,18 @@ const unescapeText = (text: string): string => {
     .replace(/\\\\/g, '\\');
 };
 
-export const fetchAndParseCalendar = async (source: CalendarSource, proxyUrl: string = ''): Promise<CalendarEvent[]> => {
+export const fetchAndParseCalendar = async (source: CalendarSource, _proxyUrl: string = ''): Promise<CalendarEvent[]> => {
   try {
-    const targetUrl = proxyUrl ? `${proxyUrl}${encodeURIComponent(source.url)}` : source.url;
-    const response = await fetch(targetUrl);
-    
+    // Use internal API to proxy requests and hide tokens
+    let apiUrl = '/api/calendar';
+    if (source.url) {
+      apiUrl += `?url=${encodeURIComponent(source.url)}`;
+    } else {
+      apiUrl += `?id=${source.id}`;
+    }
+
+    const response = await fetch(apiUrl);
+
     if (!response.ok) {
       throw new Error(`Failed to fetch ${source.name}`);
     }
@@ -95,14 +102,14 @@ export const fetchAndParseCalendar = async (source: CalendarSource, proxyUrl: st
           let end: Date;
 
           if (tempEnd) {
-             const parsedEnd = parseICSDate(tempEnd);
-             end = parsedEnd.date;
+            const parsedEnd = parseICSDate(tempEnd);
+            end = parsedEnd.date;
           } else {
             // Default duration 1 hour if no end
             end = addDays(start, isAllDay ? 1 : 0);
             if (!isAllDay) end.setHours(start.getHours() + 1);
           }
-          
+
           events.push({
             uid: currentEvent.uid || crypto.randomUUID(),
             summary: currentEvent.summary || 'No Title',
@@ -134,15 +141,15 @@ export const fetchAndParseCalendar = async (source: CalendarSource, proxyUrl: st
             tempStart = value || keyRaw.split(':')[1]; // Fallback for simple split
             // If the keyRaw contained the value due to split error (rare in standard ICS but possible in malformed)
             if (!tempStart && line.includes('DTSTART')) tempStart = line.substring(line.indexOf(':') + 1);
-            
+
             // Check for VALUE=DATE in the original key part
             if (keyRaw.includes('VALUE=DATE')) {
-               // It's handled inside parseICSDate by regex logic looking for lack of T
+              // It's handled inside parseICSDate by regex logic looking for lack of T
             }
             break;
           case 'DTEND':
             tempEnd = value;
-             if (!tempEnd && line.includes('DTEND')) tempEnd = line.substring(line.indexOf(':') + 1);
+            if (!tempEnd && line.includes('DTEND')) tempEnd = line.substring(line.indexOf(':') + 1);
             break;
         }
       }

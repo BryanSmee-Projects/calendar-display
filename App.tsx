@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { addMonths, subMonths, format, isSameMonth } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
@@ -24,11 +26,17 @@ import SettingsModal from './components/SettingsModal';
 import { ThemeProvider } from './context/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
 
-function App() {
+interface AppProps {
+  initialSources?: CalendarSource[];
+  initialProxyUrl?: string;
+}
+
+function App({ initialSources, initialProxyUrl }: AppProps) {
+  console.log("App rendered with initialSources:", initialSources);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('dynamic');
-  const [sources, setSources] = useState<CalendarSource[]>([]);
-  const [proxyUrl, setProxyUrl] = useState(DEFAULT_PROXY);
+  const [sources, setSources] = useState<CalendarSource[]>(initialSources || []);
+  const [proxyUrl, setProxyUrl] = useState(initialProxyUrl || DEFAULT_PROXY);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -37,49 +45,44 @@ function App() {
 
   // Load language, sources, proxy
   useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const response = await fetch('/config.json');
-        if (response.ok) {
-          const config = await response.json();
-          if (config.sources) {
-            setSources(config.sources);
-            // If we load from config, we probably don't want to overwrite with local storage
-            // unless we want local storage to override config?
-            // Usually config (env vars) overrides everything.
-            // Let's stick to config > local storage > default
-            return;
+    // If config was passed via props (Env Vars), skip loading from local storage/config.json for sources
+    if (!initialSources) {
+      const loadConfig = async () => {
+        // Try config.json first (legacy/manual support)
+        try {
+          const response = await fetch('/config.json');
+          if (response.ok) {
+            const config = await response.json();
+            if (config.sources) {
+              setSources(config.sources);
+              return;
+            }
           }
-          if (config.proxyUrl) {
-            setProxyUrl(config.proxyUrl);
-          }
+        } catch (e) {
+          // ignore
         }
-      } catch (e) {
-        console.log("No config.json found or invalid, using local/defaults");
-      }
 
-      // Fallback to local storage or defaults
-      const savedSources = localStorage.getItem(STORAGE_KEY_SOURCES);
+        // Fallback to local storage or defaults
+        const savedSources = localStorage.getItem(STORAGE_KEY_SOURCES);
+        if (savedSources) {
+          setSources(JSON.parse(savedSources));
+        } else {
+          setSources(DEFAULT_SOURCES);
+        }
+      };
+      loadConfig();
+    }
+
+    if (!initialProxyUrl) {
       const savedProxy = localStorage.getItem(STORAGE_KEY_PROXY);
-
-      if (savedSources) {
-        setSources(JSON.parse(savedSources));
-      } else {
-        setSources(DEFAULT_SOURCES);
-      }
-
-      if (savedProxy !== null) {
-        setProxyUrl(savedProxy);
-      }
-    };
-
-    loadConfig();
+      if (savedProxy) setProxyUrl(savedProxy);
+    }
 
     const savedLang = localStorage.getItem(STORAGE_KEY_LANG) as Language;
     if (savedLang && (savedLang === 'en' || savedLang === 'fr')) {
       setLanguage(savedLang);
     }
-  }, []);
+  }, [initialSources, initialProxyUrl]);
 
   const changeLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -273,7 +276,23 @@ function App() {
 
           {/* View Container */}
           <div className="flex-1 p-4 md:p-6 overflow-hidden bg-white dark:bg-slate-900">
-            {viewMode === 'month' ? (
+            {sources.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-full mb-4">
+                  <Info className="w-8 h-8 text-red-500 dark:text-red-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-2">No Calendars Configured</h2>
+                <p className="text-gray-600 dark:text-slate-400 max-w-md mb-6">
+                  Please configure calendar sources using environment variables or the settings menu.
+                </p>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Open Settings
+                </button>
+              </div>
+            ) : viewMode === 'month' ? (
               <MonthView
                 currentDate={currentDate}
                 events={events}
