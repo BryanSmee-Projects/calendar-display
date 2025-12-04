@@ -34,20 +34,45 @@ function App() {
 
   // Load language, sources, proxy
   useEffect(() => {
-    const savedSources = localStorage.getItem(STORAGE_KEY_SOURCES);
-    const savedProxy = localStorage.getItem(STORAGE_KEY_PROXY);
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/config.json');
+        if (response.ok) {
+          const config = await response.json();
+          if (config.sources) {
+            setSources(config.sources);
+            // If we load from config, we probably don't want to overwrite with local storage
+            // unless we want local storage to override config?
+            // Usually config (env vars) overrides everything.
+            // Let's stick to config > local storage > default
+            return;
+          }
+          if (config.proxyUrl) {
+            setProxyUrl(config.proxyUrl);
+          }
+        }
+      } catch (e) {
+        console.log("No config.json found or invalid, using local/defaults");
+      }
+
+      // Fallback to local storage or defaults
+      const savedSources = localStorage.getItem(STORAGE_KEY_SOURCES);
+      const savedProxy = localStorage.getItem(STORAGE_KEY_PROXY);
+
+      if (savedSources) {
+        setSources(JSON.parse(savedSources));
+      } else {
+        setSources(DEFAULT_SOURCES);
+      }
+
+      if (savedProxy !== null) {
+        setProxyUrl(savedProxy);
+      }
+    };
+
+    loadConfig();
+
     const savedLang = localStorage.getItem(STORAGE_KEY_LANG) as Language;
-
-    if (savedSources) {
-      setSources(JSON.parse(savedSources));
-    } else {
-      setSources(DEFAULT_SOURCES);
-    }
-
-    if (savedProxy !== null) {
-      setProxyUrl(savedProxy);
-    }
-
     if (savedLang && (savedLang === 'en' || savedLang === 'fr')) {
       setLanguage(savedLang);
     }
