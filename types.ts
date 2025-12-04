@@ -17,7 +17,7 @@ export interface CalendarEvent {
   sourceId: string; // Links back to CalendarSource
 }
 
-export type ViewMode = 'month' | 'list' | 'week';
+export type ViewMode = 'month' | 'list' | 'week' | 'dynamic';
 
 export interface CalendarState {
   sources: CalendarSource[];

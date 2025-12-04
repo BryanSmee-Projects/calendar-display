@@ -10,7 +10,8 @@ import {
   LayoutGrid,
   RefreshCw,
   Info,
-  Globe
+  Globe,
+  Activity
 } from 'lucide-react';
 
 import { CalendarSource, CalendarEvent, ViewMode } from './types';
@@ -25,7 +26,7 @@ import ThemeToggle from './components/ThemeToggle';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [viewMode, setViewMode] = useState<ViewMode>('dynamic');
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [proxyUrl, setProxyUrl] = useState(DEFAULT_PROXY);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -138,7 +139,13 @@ function App() {
   const filteredEvents = useMemo(() => {
     if (viewMode === 'list') {
       // Show events from current month onwards for list view
-      return events.filter(e => e.start >= new Date() || isSameMonth(e.start, currentDate));
+      return events.filter(e => isSameMonth(e.start, currentDate));
+    }
+    if (viewMode === 'dynamic') {
+      const now = new Date();
+      const next31Days = new Date();
+      next31Days.setDate(now.getDate() + 31);
+      return events.filter(e => e.start >= now && e.start <= next31Days);
     }
     return events;
   }, [events, viewMode, currentDate]);
@@ -157,7 +164,7 @@ function App() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+          <div className={`flex items-center gap-2 sm:gap-4 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg ${viewMode === 'dynamic' ? 'opacity-50 pointer-events-none' : ''}`}>
             <button onClick={() => handleNavigate('prev')} className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md shadow-sm transition-all"><ChevronLeft className="w-4 h-4" /></button>
             <button onClick={() => handleNavigate('today')} className="px-3 py-1 text-sm font-semibold hover:bg-white dark:hover:bg-slate-700 rounded-md transition-all">{t.app.today}</button>
             <button onClick={() => handleNavigate('next')} className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-md shadow-sm transition-all"><ChevronRight className="w-4 h-4" /></button>
@@ -169,6 +176,13 @@ function App() {
             </span>
 
             <div className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('dynamic')}
+                title={t.app.dynamic}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'dynamic' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+              >
+                <Activity className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setViewMode('month')}
                 title={t.app.month}
@@ -193,9 +207,11 @@ function App() {
                 <Globe className="w-5 h-5" />
                 <span className="text-xs font-bold uppercase">{language}</span>
               </button>
-              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-lg rounded-lg p-1 hidden group-hover:block w-24 z-50">
-                <button onClick={() => changeLanguage('en')} className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${language === 'en' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>English</button>
-                <button onClick={() => changeLanguage('fr')} className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${language === 'fr' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>Français</button>
+              <div className="absolute right-0 top-full pt-2 hidden group-hover:block w-24 z-50">
+                <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-lg rounded-lg p-1">
+                  <button onClick={() => changeLanguage('en')} className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${language === 'en' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>English</button>
+                  <button onClick={() => changeLanguage('fr')} className={`w-full text-left px-3 py-1.5 text-sm rounded-md ${language === 'fr' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>Français</button>
+                </div>
               </div>
             </div>
 
@@ -216,8 +232,17 @@ function App() {
           <aside className="w-64 bg-gray-50 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex-col p-4 hidden lg:flex">
             <div className="mb-6">
               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-                <span className="text-4xl font-bold text-gray-800 dark:text-slate-100 block mb-1">{format(currentDate, 'd', { locale })}</span>
-                <span className="text-gray-500 dark:text-slate-400 uppercase tracking-wider text-sm font-medium">{format(currentDate, 'EEEE', { locale })}</span>
+                {isSameMonth(currentDate, new Date()) ? (
+                  <>
+                    <span className="text-4xl font-bold text-gray-800 dark:text-slate-100 block mb-1">{format(currentDate, 'd', { locale })}</span>
+                    <span className="text-gray-500 dark:text-slate-400 uppercase tracking-wider text-sm font-medium">{format(currentDate, 'EEEE', { locale })}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold text-gray-800 dark:text-slate-100 block mb-1 capitalize">{format(currentDate, 'MMMM', { locale })}</span>
+                    <span className="text-gray-500 dark:text-slate-400 uppercase tracking-wider text-sm font-medium">{format(currentDate, 'yyyy', { locale })}</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -242,13 +267,6 @@ function App() {
                 {sources.length === 0 && (
                   <p className="text-sm text-gray-400 dark:text-slate-500 italic">{t.settings.noSources}</p>
                 )}
-              </div>
-            </div>
-
-            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-slate-700">
-              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-3 rounded-lg text-xs flex items-start gap-2">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>{t.sidebar.infoText}</p>
               </div>
             </div>
           </aside>

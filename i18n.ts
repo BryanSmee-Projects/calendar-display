@@ -7,6 +7,7 @@ export const translations = {
       today: 'Today',
       month: 'Month',
       list: 'List',
+      dynamic: 'Dynamic',
       settings: 'Settings',
       addSource: 'Add Source',
       save: 'Save Changes',
@@ -29,8 +30,8 @@ export const translations = {
       urlPlaceholder: 'https://example.com/calendar.ics',
     },
     sidebar: {
-        calendars: 'Calendars',
-        infoText: 'Add your public .ics links in settings. Ensure CORS is handled if fetching fails.',
+      calendars: 'Calendars',
+      infoText: 'Add your public .ics links in settings. Ensure CORS is handled if fetching fails.',
     }
   },
   fr: {
@@ -39,6 +40,7 @@ export const translations = {
       today: "Aujourd'hui",
       month: 'Mois',
       list: 'Liste',
+      dynamic: 'Dynamique',
       settings: 'Paramètres',
       addSource: 'Ajouter',
       save: 'Enregistrer',
@@ -61,8 +63,8 @@ export const translations = {
       urlPlaceholder: 'https://exemple.com/calendrier.ics',
     },
     sidebar: {
-        calendars: 'Calendriers',
-        infoText: 'Ajoutez vos liens .ics publics dans les paramètres. Assurez-vous que CORS est géré si la récupération échoue.',
+      calendars: 'Calendriers',
+      infoText: 'Ajoutez vos liens .ics publics dans les paramètres. Assurez-vous que CORS est géré si la récupération échoue.',
     }
   }
 };
