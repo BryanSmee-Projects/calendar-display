@@ -1,0 +1,5 @@
+{
+  "name": "OpenCal Viewer",
+  "description": "A modern, client-side web application to aggregate and display multiple public ICS calendars in a unified interface.",
+  "requestFramePermissions": []
+}
